@@ -4,7 +4,7 @@ from PyQt5.QtGui import QPixmap, QImage, QKeySequence
 from skimage import io
 #Add
 import os
-os.chdir("C:/Users/olory/Desktop/PostDoc/ProjetIntestin/junction_annotator-main")
+#os.chdir("C:/Users/olory/Desktop/PostDoc/ProjetIntestin/junction_annotator-main")
 #
 
 from gui import Ui_JunctionAnnotator
@@ -237,7 +237,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
         #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
         #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
-        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"))
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=True)
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()
@@ -248,7 +248,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         """
         #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
         #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
-        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"))
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=False)
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()

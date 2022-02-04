@@ -103,12 +103,12 @@ class Loader:
         with open(os.path.join(self.outputpath,"patchlist.txt"), "a") as file_object:
             file_object.write(os.path.join(self.outputpath, str(orig_fname_spplit[0])+'_'+str(self.n)+'.'+ext)+";"+str(classes)+";"+labelling_time+"\n")
 
-    def save_crop_data(self, classes, labelling_time):
+    def save_crop_data(self, classes, labelling_time, structure):
         orig_fname= os.path.join(self.path, self.files[self.file_idx])
         orig_fname_spplit= os.path.splitext(self.files[self.file_idx])
         if len(self.crop_data)>self.n-1:
             with open(os.path.join(self.outputpath,"patchlist.txt"), "a") as file_object:
-                file_object.write(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(classes)+";"+labelling_time+"\n")
+                file_object.write(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(structure)+";"+str(classes)+";"+labelling_time+"\n")
 
 def generate_box(crop_size=128, total_size=256):
     """
