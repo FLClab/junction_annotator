@@ -1343,7 +1343,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>fragmented</string>
+       <string>Fragmented</string>
       </property>
      </widget>
     </widget>
@@ -1436,19 +1436,6 @@
       <string>Start</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="button_stop_timer">
-     <property name="geometry">
-      <rect>
-       <x>200</x>
-       <y>0</y>
-       <width>51</width>
-       <height>30</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Stop</string>
-     </property>
-    </widget>
     <widget class="QTimeEdit" name="timeEdit_timer">
      <property name="enabled">
       <bool>false</bool>
@@ -1457,7 +1444,7 @@
       <rect>
        <x>60</x>
        <y>0</y>
-       <width>131</width>
+       <width>181</width>
        <height>31</height>
       </rect>
      </property>
