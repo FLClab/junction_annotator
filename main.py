@@ -4,7 +4,7 @@ from PyQt5.QtGui import QPixmap, QImage, QKeySequence
 from skimage import io
 #Add
 import os
-#os.chdir("C:/Users/olory/Desktop/PostDoc/ProjetIntestin/junction_annotator-main/")
+os.chdir("C:/Users/olory/Desktop/PostDoc/ProjetIntestin/junction_annotator-main")
 #
 
 from gui import Ui_JunctionAnnotator
@@ -85,7 +85,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         #self.timer.setObjectName("timer")
         self.button_start_timer.clicked.connect(self.start_action)
         #self.button_pause_timer.clicked.connect(self.pause_action)
-        self.button_stop_timer.clicked.connect(self.stop_action)
+        #self.button_stop_timer.clicked.connect(self.stop_action)
         # adding action to timer
         self.timer.timeout.connect(self.showTime)
         # update the timer every tenth second
@@ -246,6 +246,9 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         """
         Skip the current crop?
         """
+        #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
+        #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"))
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()
@@ -289,7 +292,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.timeEdit_timer.setTime(self.curr_time) #QTime(0, 0, 0))
         self.button_start_timer.setEnabled(False)
         #self.button_pause_timer.setEnabled(True)
-        self.button_stop_timer.setEnabled(True)
+        #self.button_stop_timer.setEnabled(True)
   
         ## count = 0
         ##if self.count == 0:
@@ -303,7 +306,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
 
         self.button_start_timer.setEnabled(True)
         #self.button_pause_timer.setEnabled(False)
-        self.button_stop_timer.setEnabled(False)
+        #self.button_stop_timer.setEnabled(False)
   
     def stop_action(self):
         # making flag false
@@ -317,7 +320,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         #self.timeEdit_timer.setTime(self.curr_time) #QTime(0, 0, 0))
         self.button_start_timer.setEnabled(True)
         #self.button_pause_timer.setEnabled(False)
-        self.button_stop_timer.setEnabled(False)
+        #self.button_stop_timer.setEnabled(False)
         
     def reset_action(self):
   
@@ -332,7 +335,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.timeEdit_timer.setTime(self.curr_time) #QTime(0, 0, 0))
         self.button_start_timer.setEnabled(True)
         #self.button_pause_timer.setEnabled(False)
-        self.button_stop_timer.setEnabled(False)
+        #self.button_stop_timer.setEnabled(False)
 
 
 
