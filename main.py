@@ -24,7 +24,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         # Setup variables
         self.path = self.select_path(title="Select source path")
         self.outputpath = self.select_path(title="Select patch destination path")
-        self.loader = Loader(path=self.path, outputpath=self.outputpath)
+        self.loader = Loader(path=self.path, outputpath=self.outputpath, crop_size=64, crop_step=int(64*0.75), total_size=128)
         self.labels = [False for _ in range(4)]
         self.labelValues = [0.0 for _ in range(4)]
         self.current_time = time.time()
@@ -36,6 +36,8 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.drag_x, self.drag_y = 0, 0
         self.mouse_x, self.mouse_y = 0, 0
         self.dragging = False
+        self.swap_colors = True
+
 
         # Initial image
         self.box = generate_box(self.loader.crop_size, self.loader.total_size)
@@ -44,15 +46,19 @@ class App(QMainWindow, Ui_JunctionAnnotator):
 
         # Connect buttons and stuff
         self.button_skip.clicked.connect(self.skip)
+        self.button_ambiguous.clicked.connect(self.ambiguous)
         self.button_submit.clicked.connect(self.submit)
         self.button_pause.clicked.connect(self.pause)
         self.slider_intensity_ch0.valueChanged.connect(self.display_crop)
         self.slider_intensity_ch1.valueChanged.connect(self.display_crop)
         #self.button_zoom.clicked.connect(self.zoom)  # Zoom buttons not connected for now (doesn't work properly)
         #self.button_dezoom.clicked.connect(self.dezoom)
-        self.label_image.mousePressEvent = self.image_click
-        self.label_image.mouseMoveEvent = self.image_drag
-        self.label_image.mouseReleaseEvent = self.image_release
+        #self.label_image.mousePressEvent = self.image_click
+        #self.label_image.mouseMoveEvent = self.image_drag
+        #self.label_image.mouseReleaseEvent = self.image_release
+        self.label_ch1.mousePressEvent = self.action_swap_colors
+        self.label_ch2.mousePressEvent = self.action_swap_colors
+
 
         # Shortcuts/hotkeys
 
@@ -111,15 +117,15 @@ class App(QMainWindow, Ui_JunctionAnnotator):
     def reset_class_values(self):
         self.labelValues = [0.0 for _ in range(4)]
 
-        self.slider_class_1.setValue(0)
-        self.slider_class_2.setValue(0)
-        self.slider_class_3.setValue(0)
-        self.slider_class_4.setValue(0)
+        self.slider_class_1.setValue(50)
+        self.slider_class_2.setValue(50)
+        self.slider_class_3.setValue(50)
+        self.slider_class_4.setValue(50)
 
-        self.Spin_class_1.setValue(0.0)
-        self.Spin_class_2.setValue(0.0)
-        self.Spin_class_3.setValue(0.0)
-        self.Spin_class_4.setValue(0.0)
+        self.Spin_class_1.setValue(0.5)
+        self.Spin_class_2.setValue(0.5)
+        self.Spin_class_3.setValue(0.5)
+        self.Spin_class_4.setValue(0.5)
 
     def resetZoom(self):
         self.zoom_level=1.0
@@ -222,6 +228,17 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.adjustScrollBar(self.scrollArea.horizontalScrollBar(), self.zoom_level)
         self.adjustScrollBar(self.scrollArea.verticalScrollBar(), self.zoom_level)
 
+    def action_swap_colors(self, event):
+        self.swap_colors = not self.swap_colors
+        if self.swap_colors:
+            self.label_ch2.setStyleSheet("background-color: #00ff00")
+            self.label_ch1.setStyleSheet("background-color: red")
+        else:
+            self.label_ch1.setStyleSheet("background-color: #00ff00")
+            self.label_ch2.setStyleSheet("background-color: red")
+
+        self.display_crop()
+
 
     def adjustScrollBar(self, scrollBar, factor):
         scrollBar.setValue(int(factor * scrollBar.value()
@@ -230,25 +247,42 @@ class App(QMainWindow, Ui_JunctionAnnotator):
 
     def submit(self):
         """
-        Submit the classification of the current crop and display the next one
+        Submit the classification of the current crop and display the next one; structure = 1
         """
         self.time_steps.append(time.time() - self.current_time)
         time_taken = np.sum(self.time_steps)
         self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
         #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
         #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
-        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=True)
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=1)
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()
 
     def skip(self):
         """
-        Skip the current crop?
+        NO structure in crop; structure = 0
         """
+        self.time_steps.append(time.time() - self.current_time)
+        time_taken = np.sum(self.time_steps)
+        self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
         #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
         #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
-        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=False)
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=0)
+        self.next_crop()
+        self.curr_time =  QTime(00,00,00)
+        self.start_action()
+
+    def ambiguous(self):
+        """
+        Mark crop as ambiguous; structure = 2
+        """
+        self.time_steps.append(time.time() - self.current_time)
+        time_taken = np.sum(self.time_steps)
+        self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
+        #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
+        #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=2)
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()
@@ -397,6 +431,12 @@ class App(QMainWindow, Ui_JunctionAnnotator):
 
         # channel 1
         self.displayed_crop[...,1] = np.clip(self.crop[...,1].astype('float') * self.slider_intensity_ch1.value()/100, 0, 255).astype('uint8').copy()
+
+        # Reverse colors if needed
+        if self.swap_colors:
+            buffer = self.displayed_crop[...,1].copy()
+            self.displayed_crop[...,1] = self.displayed_crop[...,0].copy()
+            self.displayed_crop[...,0] = buffer
 
         # Zoom and Drag
         h, w, c = self.displayed_crop.shape
