@@ -115,7 +115,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
 
 
     def reset_class_values(self):
-        self.labelValues = [0.0 for _ in range(4)]
+        self.labelValues = [0.5 for _ in range(4)]
 
         self.slider_class_1.setValue(50)
         self.slider_class_2.setValue(50)
