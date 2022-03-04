@@ -58,7 +58,7 @@
     <property name="geometry">
      <rect>
       <x>530</x>
-      <y>290</y>
+      <y>320</y>
       <width>181</width>
       <height>23</height>
      </rect>
@@ -71,7 +71,7 @@
     <property name="geometry">
      <rect>
       <x>530</x>
-      <y>350</y>
+      <y>380</y>
       <width>181</width>
       <height>23</height>
      </rect>
@@ -280,6 +280,15 @@
           </color>
          </brush>
         </colorrole>
+        <colorrole role="PlaceholderText">
+         <brush brushstyle="NoBrush">
+          <color alpha="128">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
        </active>
        <inactive>
         <colorrole role="WindowText">
@@ -417,6 +426,15 @@
           </color>
          </brush>
         </colorrole>
+        <colorrole role="PlaceholderText">
+         <brush brushstyle="NoBrush">
+          <color alpha="128">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
        </inactive>
        <disabled>
         <colorrole role="WindowText">
@@ -548,6 +566,15 @@
         <colorrole role="ToolTipText">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+        <colorrole role="PlaceholderText">
+         <brush brushstyle="NoBrush">
+          <color alpha="128">
            <red>0</red>
            <green>0</green>
            <blue>0</blue>
@@ -717,6 +744,15 @@
           </color>
          </brush>
         </colorrole>
+        <colorrole role="PlaceholderText">
+         <brush brushstyle="NoBrush">
+          <color alpha="128">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
        </active>
        <inactive>
         <colorrole role="WindowText">
@@ -854,6 +890,15 @@
           </color>
          </brush>
         </colorrole>
+        <colorrole role="PlaceholderText">
+         <brush brushstyle="NoBrush">
+          <color alpha="128">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
        </inactive>
        <disabled>
         <colorrole role="WindowText">
@@ -985,6 +1030,15 @@
         <colorrole role="ToolTipText">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+        <colorrole role="PlaceholderText">
+         <brush brushstyle="NoBrush">
+          <color alpha="128">
            <red>0</red>
            <green>0</green>
            <blue>0</blue>
@@ -1488,13 +1542,26 @@
     <property name="geometry">
      <rect>
       <x>530</x>
-      <y>320</y>
+      <y>350</y>
       <width>181</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
      <string>Ambiguous</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="button_previous">
+    <property name="geometry">
+     <rect>
+      <x>530</x>
+      <y>290</y>
+      <width>181</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Previous</string>
     </property>
    </widget>
   </widget>
@@ -1504,7 +1571,7 @@
      <x>0</x>
      <y>0</y>
      <width>862</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
