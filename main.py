@@ -8,7 +8,7 @@ import os
 #
 
 from gui import Ui_JunctionAnnotator
-from loader import Loader, generate_box
+from loader import Loader, generate_box, HISTORY_F_NAME, OUTPUT_FILE_NAME
 import numpy as np
 import sys
 import time
@@ -16,20 +16,31 @@ from matplotlib import pyplot as plt
 import math
 import datetime
 #from PyQt5 import QtCore
+CROP_SIZE= 64
+CROP_STEP= int(64*0.75)
+TOTAL_SIZE= 128
 
 class App(QMainWindow, Ui_JunctionAnnotator):
     def __init__(self):
         super(self.__class__, self).__init__()
         self.setupUi(self)
         # Setup variables
-        self.path = self.select_path(title="Select source path")
-        self.outputpath = self.select_path(title="Select patch destination path")
-        self.loader = Loader(path=self.path, outputpath=self.outputpath, crop_size=64, crop_step=int(64*0.75), total_size=128)
+        self.loader= self.load_historyfile(crop_size=CROP_SIZE, crop_step=CROP_STEP, total_size=TOTAL_SIZE)
+        if self.loader is None:
+            self.path = self.select_path(title="Select source path")
+            self.outputpath = self.select_path(title="Select patch destination path")
+            self.loader = Loader(path=self.path, outputpath=self.outputpath, crop_size=CROP_SIZE, crop_step=CROP_STEP, total_size=TOTAL_SIZE)
+            self.check_patch_file_exists()
+        else:
+            self.path = self.loader.path
+            self.outputpath = self.loader.outputpath
         self.labels = [False for _ in range(4)]
         self.labelValues = [0.0 for _ in range(4)]
         self.current_time = time.time()
         self.time_steps = []
         self.time_steps_calc=[]
+        self.hist_classes= []
+        self.hist_structures=[]
 
         # Image settings
         self.zoom_level = np.float32(1.0)
@@ -48,6 +59,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.button_skip.clicked.connect(self.skip)
         self.button_ambiguous.clicked.connect(self.ambiguous)
         self.button_submit.clicked.connect(self.submit)
+        self.button_previous.clicked.connect(self.goBackward)
         self.button_pause.clicked.connect(self.pause)
         self.slider_intensity_ch0.valueChanged.connect(self.display_crop)
         self.slider_intensity_ch1.valueChanged.connect(self.display_crop)
@@ -126,7 +138,34 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.Spin_class_2.setValue(0.5)
         self.Spin_class_3.setValue(0.5)
         self.Spin_class_4.setValue(0.5)
+        
+    def set_class_values(self, classes):
+        self.labelValues = classes
 
+        self.slider_class_1.setValue(int(self.labelValues[0]*100))
+        self.slider_class_2.setValue(int(self.labelValues[1]*100))
+        self.slider_class_3.setValue(int(self.labelValues[2]*100))
+        self.slider_class_4.setValue(int(self.labelValues[3]*100))
+
+        self.Spin_class_1.setValue(self.labelValues[0])
+        self.Spin_class_2.setValue(self.labelValues[1])
+        self.Spin_class_3.setValue(self.labelValues[2])
+        self.Spin_class_4.setValue(self.labelValues[3])
+
+        #if i==1:
+        ##    self.labelValues[0]= self.Spin_class_1.value()
+        #    self.slider_class_1.setValue(int(self.labelValues[0]*100))#setProperty("value", self.labelValues[0])
+        #if i==2:
+        #    self.labelValues[1]= self.Spin_class_2.value()
+        #    self.slider_class_2.setValue(int(self.labelValues[1]*100))# setProperty("value", self.labelValues[1])
+        #if i==3:
+        #    self.labelValues[2]= self.Spin_class_3.value()
+        #    self.slider_class_3.setValue(int(self.labelValues[2]*100))#setProperty("value", self.labelValues[2])
+        #if i==4:
+        #    self.labelValues[3]= self.Spin_class_4.value()
+        #    self.slider_class_4.setValue(int(self.labelValues[3]*100))#setProperty("value", self.labelValues[3])
+        
+        
     def resetZoom(self):
         self.zoom_level=1.0
         #self.slider_zoom.setValue(int(self.zoom_level*100))
@@ -174,6 +213,43 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         """
         path = str(QFileDialog.getExistingDirectory(self, title))
         return path
+    
+    def check_patch_file_exists(self):
+        if os.path.exists(os.path.join(self.outputpath,OUTPUT_FILE_NAME)):
+            #qm = QMessageBox() # QtGui.QMessageBox
+            #ret = qm.question(self,'Append patch list file', 
+            #                  f"The output directory <i>{self.outputpath}</i> already contains a patch list file. Do you want to append the new data to this old file ? <br/> (If you choose <b>No</b>, the old file will be automatically renamed and a new file will be created.)", qm.Yes | qm.No)
+            msgbox = QMessageBox(QMessageBox.Question,'Append patch list file', 
+                              f"The output directory <i>{self.outputpath}</i> already contains a patch list file. Do you want to append the new data to this old file ? <br/> (If you choose <b>No</b>, the old file will be automatically renamed and a new file will be created.)")
+            msgbox.addButton(QMessageBox.Yes)
+            msgbox.addButton(QMessageBox.No)
+            msgbox.setDefaultButton(QMessageBox.No)
+            #msgbox.setCheckBox(cb)
+
+            rep = msgbox.exec()
+            if rep == QMessageBox.No:
+                self.loader.renamePatchListFile()
+    
+    def load_historyfile(self, crop_size, crop_step, total_size):
+        if os.path.exists(HISTORY_F_NAME): 
+            #qm = QMessageBox() # QtGui.QMessageBox
+            msgbox = QMessageBox(QMessageBox.Question,
+                                 'Load history', "Do you want to resume from last session?") #, qm.Yes | qm.No)
+            msgbox.addButton(QMessageBox.Yes)
+            msgbox.addButton(QMessageBox.No)
+            msgbox.setDefaultButton(QMessageBox.No)            
+
+            rep = msgbox.exec()
+            if rep == QMessageBox.Yes:
+                loader = Loader.loadFromHistory(crop_size=crop_size, crop_step=crop_step, total_size=TOTAL_SIZE)#  Loader(path=self.path, outputpath=self.outputpath, crop_size=64, crop_step=int(64*0.75), total_size=128)
+                return loader
+            #end_dialog.setIcon(QMessageBox.Information)
+            #end_dialog.setText('Labeled all of the data in the directory!')
+            #end_dialog.setWindowTitle('Finished')
+            #end_dialog.exec()
+            
+        return None
+
 
     def display_crop000(self):
         """
@@ -255,9 +331,32 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
         #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
         self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=1)
+        self.hist_structures.append(1)
+        self.hist_classes.append(self.labelValues)
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()
+        
+    def goBackward(self):
+        self.previous_crop()
+        
+        
+    def closeEvent(self, event):
+        """
+        Closing windows:
+            save history
+            save last edited file
+        """
+        if False:
+            self.time_steps.append(time.time() - self.current_time)
+            time_taken = np.sum(self.time_steps)
+            self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
+            #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
+            #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
+            self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=1)
+            self.next_crop()
+        self.loader.saveHistory(self.hist_classes, self.hist_structures)
+        
 
     def skip(self):
         """
@@ -310,11 +409,56 @@ class App(QMainWindow, Ui_JunctionAnnotator):
             end_dialog.setText('Labeled all of the data in the directory!')
             end_dialog.setWindowTitle('Finished')
             end_dialog.exec()
+            
 
         self.zoom_level = np.float32(1.0)
         self.display_crop()
         self.show()
 
+    def previous_crop(self):
+        """
+        Display the next crop to label
+        """
+        self.time_steps = []
+        self.current_time = time.time()
+        #for i, check in enumerate(self.frame_choices.children()):
+        #    check.setChecked(False)
+        #    self.labels[i] = False
+        
+        if len(self.hist_classes)==0:
+            noprevious_dialog = QMessageBox()
+            noprevious_dialog.setIcon(QMessageBox.Warning)
+            noprevious_dialog.setText('Cannot go backward!')
+            noprevious_dialog.setWindowTitle('Error')
+            noprevious_dialog.exec()
+            return
+        try:
+           p_crop = self.loader.__previous__()
+           if p_crop is  None :
+               noprevious_dialog = QMessageBox()
+               noprevious_dialog.setIcon(QMessageBox.Warning)
+               noprevious_dialog.setText('Cannot go backward!')
+               noprevious_dialog.setWindowTitle('Error')
+               noprevious_dialog.exec()
+               return
+           else:
+               self.crop = p_crop
+               self.reset_class_values()
+               self.resetZoom()
+               classes=self.hist_classes[-1]
+               self.hist_classes=self.hist_classes[:-1]
+               self.hist_structures=self.hist_structures[:-1]
+               self.set_class_values(classes)
+        except StopIteration:
+            end_dialog = QMessageBox()
+            end_dialog.setIcon(QMessageBox.Information)
+            end_dialog.setText('Labeled all of the data in the directory!')
+            end_dialog.setWindowTitle('Finished')
+            end_dialog.exec()
+
+        self.zoom_level = np.float32(1.0)
+        self.display_crop()
+        self.show()
 
         
     def start_action(self):
