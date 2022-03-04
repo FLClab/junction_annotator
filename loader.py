@@ -2,8 +2,15 @@ from skimage import io
 from matplotlib import pyplot as plt
 import numpy as np
 import os
+import json
+from datetime import datetime
+
+
+HISTORY_F_NAME= os.path.join(os.path.dirname(os.path.abspath(__file__)),"history.json")
+OUTPUT_FILE_NAME="patchlist.txt"
 
 class Loader:
+    
     def __init__(self, path, outputpath=None, crop_size=128, crop_step=int(128*0.75), total_size=256):
         """
         Crop iterator
@@ -21,6 +28,8 @@ class Loader:
 
         self.file_idx = 0
         self.n = 0
+        self.previous= 0
+        self.atStopIteration= False
 
         self.generate_crops(os.path.join(self.path, self.files[self.file_idx]))
 
@@ -60,7 +69,8 @@ class Loader:
         return self
 
     def __next__(self):
-
+        self.previous =0
+        self.atStopIteration= False
         if self.n >= len(self.crop_data):
             self.file_idx += 1
             self.x = 0
@@ -71,6 +81,7 @@ class Loader:
 
         if self.file_idx >= len(self.files):
             #print("Stop iteration ")
+            self.atStopIteration = True
             raise StopIteration
 
 
@@ -93,6 +104,44 @@ class Loader:
 
         return crop
 
+    def __previous__(self):
+        self.previous = self.previous- 1
+        self.n = self.n - 2
+        if self.n < 0 :
+            self.n = self.n + 2
+            self.previous= 0
+            return None 
+            #self.file_idx -= 1
+            #self.x = 0
+            #self.y = 0
+            #if self.file_idx < len(self.files):    
+            #    self.generate_crops(os.path.join(self.path, self.files[self.file_idx]))
+            #    self.n = len( self.crop_data) -1
+        #if self.file_idx >= len(self.files):
+        #    #print("Stop iteration ")
+        #    raise StopIteration
+
+
+        crop = self.crop_data[self.n]
+        y = crop['Y']
+        x = crop['X']
+        size = crop['size']
+    
+        pad_size = (self.total_size - self.crop_size)//2
+        n_pad = ((pad_size, pad_size), (pad_size, pad_size), (0, 0))
+        image_pad = np.pad(self.image, n_pad, mode='constant')
+
+        crop = image_pad[y-pad_size:y+size+pad_size, x-pad_size:x+size+pad_size].copy()
+        if crop.shape[0] != crop.shape[1]:
+            canvas = np.zeros((self.total_size, self.total_size, 3), dtype='uint8')
+            canvas[:crop.shape[0], :crop.shape[1], :] = crop
+            crop = canvas
+
+        self.n += 1
+        self.atStopIteration= False
+
+        return crop
+ 
     def save_patch(self,image, classes, labelling_time=0, ext=None):
         print("Image ", image.shape)
         orig_fname=os.path.join(self.path, self.files[self.file_idx])
@@ -100,16 +149,72 @@ class Loader:
         if ext is None:
             ext=str(orig_fname_spplit[0])
         io.imsave(os.path.join(self.outputpath, str(orig_fname_spplit[0])+'_'+str(self.n)+'.'+ext), image)
-        with open(os.path.join(self.outputpath,"patchlist.txt"), "a") as file_object:
+        with open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), "a") as file_object:
             file_object.write(os.path.join(self.outputpath, str(orig_fname_spplit[0])+'_'+str(self.n)+'.'+ext)+";"+str(classes)+";"+labelling_time+"\n")
 
     def save_crop_data(self, classes, labelling_time, structure):
         orig_fname= os.path.join(self.path, self.files[self.file_idx])
         orig_fname_spplit= os.path.splitext(self.files[self.file_idx])
         if len(self.crop_data)>self.n-1:
-            with open(os.path.join(self.outputpath,"patchlist.txt"), "a") as file_object:
-                file_object.write(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(structure)+";"+str(classes)+";"+labelling_time+"\n")
+            if self.previous>=0:
+                with open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), "a") as file_object:
+                    file_object.write(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(structure)+";"+str(classes)+";"+labelling_time+"\n")
+            else:
+                lines = open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), 'r').readlines()
+                lines = lines[:self.previous]
+                lines.append(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(structure)+";"+str(classes)+";"+labelling_time+"\n")
+                open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), 'w').writelines(lines)
+                self.previous= 0
 
+
+    def saveHistory(self, classes=[], structures=[]):
+        #☺ ne pas sauvegarder si l'utilisateur a parcouru dejà toutes les images
+        self.deleteHistory()
+        if self.atStopIteration:
+            return
+        f_ow = open(HISTORY_F_NAME, "w")
+        last_data={"path":self.path, "outputpath":self.outputpath, 
+                   "file_idx":self.file_idx, "files":self.files, 
+                   "crop_data":self.crop_data, "n":self.n-1,
+                   "classes":classes, "structures":structures }
+        json.dump(last_data, f_ow)
+        f_ow.close()
+        #with open(HISTORY_F_NAME, "w") as file_object:
+        
+    #@classmethod
+    #def loadHistory(cls, crop_size, crop_step, total_size):
+    @staticmethod
+    def loadFromHistory( crop_size, crop_step, total_size):
+        mloader= None
+        if os.path.exists(HISTORY_F_NAME):
+            with open(HISTORY_F_NAME) as json_file:
+                data = json.load(json_file)
+                mloader = Loader( path=data["path"], outputpath=data["outputpath"], crop_size=crop_size, crop_step=crop_step, total_size=total_size) 
+                #mloader.path = data["path"]
+                #mloader.outputpath= data["outputpath"]
+                if os.path.exists(os.path.join( data["outputpath"],OUTPUT_FILE_NAME)):
+                    mloader.file_idx= data["file_idx"]
+                    mloader.files= data["files"]
+                    mloader.crop_data= data["crop_data"]
+                    mloader.n= data["n"]
+                    classes=data["classes"]
+                    structures=data["structures"]                
+                    mloader.load_image(os.path.join(mloader.path, mloader.files[mloader.file_idx]))#  mloader.generate_crops(os.path.join(mloader.path, mloader.files[mloader.file_idx]))
+            #return mloader
+        return mloader
+            
+    def deleteHistory(self):
+        if os.path.exists(HISTORY_F_NAME):
+            os.remove(HISTORY_F_NAME)
+            
+    def renamePatchListFile(self):
+        if os.path.exists(os.path.join(self.outputpath,OUTPUT_FILE_NAME)):
+            fnamepath=os.path.join(self.outputpath,OUTPUT_FILE_NAME)
+            fnamesplit = os.path.splitext(OUTPUT_FILE_NAME)
+            fnewnamepath=os.path.join(self.outputpath,fnamesplit[0]+"_"+datetime.now().strftime("%Y%m%d%H%M%S")+"."+fnamesplit[1] )        
+            os.rename(fnamepath, fnewnamepath)
+            #os.remove(HISTORY_F_NAME)
+        
 def generate_box(crop_size=128, total_size=256):
     """
     Generate the focus box in the center
