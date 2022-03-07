@@ -1,4 +1,5 @@
 from skimage import io
+from skimage.filters import threshold_otsu
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -11,12 +12,14 @@ OUTPUT_FILE_NAME="patchlist.txt"
 
 class Loader:
     
-    def __init__(self, path, outputpath=None, crop_size=128, crop_step=int(128*0.75), total_size=256):
+    def __init__(self, path, outputpath=None, crop_size=128, crop_step=int(128*0.75), total_size=256, fg_threshold=0.2):
         """
         Crop iterator
         :param path:
-        :param crop_size:
-        :param crop_step:
+        :param crop_size: Size of the crop of interest
+        :param crop_step: Step between crops; smaller step means larger overlap between crops
+        :param total_size: Size of the larger crop for vizualisation
+        :param fg_threshold: Proportion of the crop that must be foreground to be considered
         """
         self.path = path
         self.outputpath= outputpath
@@ -25,6 +28,8 @@ class Loader:
         self.crop_size = crop_size
         self.crop_step = crop_step
         self.total_size = total_size
+
+        self.fg_threshold = fg_threshold
 
         self.file_idx = 0
         self.n = 0
@@ -40,6 +45,11 @@ class Loader:
         :return: Image with shape [height, width, color]
         """
         self.image = io.imread(img_path).astype('float32')
+
+        # Basic foreground segmentation to check for empty spaces
+        self.foreground = self.image > threshold_otsu(self.image)
+        self.foreground = (self.foreground[0] + self.foreground[1]) > 0
+
         #print("image ", self.image.shape)
         self.image[0] = self.image[0] - np.min(self.image[0], axis=0)
         self.image[1] = self.image[1] - np.min(self.image[1], axis=0)
@@ -61,8 +71,12 @@ class Loader:
         self.crop_data = []
         for j in range(0, self.image.shape[0], self.crop_step):
             for i in range(0, self.image.shape[1], self.crop_step):
-                self.crop_data.append({'image':img_path, 'Y':j, 'X':i, 'size':self.crop_size})
+                # Check if crop contains significant foreground
+                crop = self.foreground[j:j+self.crop_size, i:i+self.crop_size]
+                if np.sum(crop) >= np.size(crop) * 0.15:
+                    self.crop_data.append({'image':img_path, 'Y':j, 'X':i, 'size':self.crop_size})
 
+        #self.crop_data = self.crop_data[1:]
         np.random.shuffle(self.crop_data)
 
     def __iter__(self):
@@ -94,7 +108,7 @@ class Loader:
         n_pad = ((pad_size, pad_size), (pad_size, pad_size), (0, 0))
         image_pad = np.pad(self.image, n_pad, mode='constant')
 
-        crop = image_pad[y-pad_size:y+size+pad_size, x-pad_size:x+size+pad_size].copy()
+        crop = image_pad[y:y+size+2*pad_size, x:x+size+2*pad_size].copy()
         if crop.shape[0] != crop.shape[1]:
             canvas = np.zeros((self.total_size, self.total_size, 3), dtype='uint8')
             canvas[:crop.shape[0], :crop.shape[1], :] = crop
@@ -131,7 +145,7 @@ class Loader:
         n_pad = ((pad_size, pad_size), (pad_size, pad_size), (0, 0))
         image_pad = np.pad(self.image, n_pad, mode='constant')
 
-        crop = image_pad[y-pad_size:y+size+pad_size, x-pad_size:x+size+pad_size].copy()
+        crop = image_pad[y:y+size+2*pad_size, x:x+size+2*pad_size].copy()
         if crop.shape[0] != crop.shape[1]:
             canvas = np.zeros((self.total_size, self.total_size, 3), dtype='uint8')
             canvas[:crop.shape[0], :crop.shape[1], :] = crop
