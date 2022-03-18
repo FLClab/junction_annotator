@@ -1,10 +1,12 @@
 from skimage import io
-from skimage.filters import threshold_otsu
-from matplotlib import pyplot as plt
+from skimage.filters import threshold_triangle, gaussian, rank
+from skimage.morphology import binary_erosion, area_closing, binary_dilation
 import numpy as np
 import os
 import json
 from datetime import datetime
+
+from matplotlib import pyplot as plt
 
 
 HISTORY_F_NAME= os.path.join(os.path.dirname(os.path.abspath(__file__)),"history.json")
@@ -12,7 +14,7 @@ OUTPUT_FILE_NAME="patchlist.txt"
 
 class Loader:
     
-    def __init__(self, path, outputpath=None, crop_size=128, crop_step=int(128*0.75), total_size=256, fg_threshold=0.2):
+    def __init__(self, path, outputpath=None, crop_size=60, crop_step=int(60*0.75), total_size=128, fg_threshold=0.2):
         """
         Crop iterator
         :param path:
@@ -47,8 +49,14 @@ class Loader:
         self.image = io.imread(img_path).astype('float32')
 
         # Basic foreground segmentation to check for empty spaces
-        self.foreground = self.image > threshold_otsu(self.image)
-        self.foreground = (self.foreground[0] + self.foreground[1]) > 0
+        image_combined = self.image[0] / np.max(self.image[0]) + self.image[1] / np.max(self.image[1])
+        foreground_initial = image_combined > threshold_triangle(image_combined)
+
+        # Edge segmentation
+        foreground_edge = gaussian(image_combined, sigma=5)
+        foreground_edge = (foreground_edge > threshold_triangle(foreground_edge)).astype('uint8')
+        foreground_erode = rank.minimum(foreground_edge, np.ones((300, 300)))
+        self.foreground = foreground_initial * (foreground_edge * 1 - foreground_erode * 1)
 
         #print("image ", self.image.shape)
         self.image[0] = self.image[0] - np.min(self.image[0], axis=0)

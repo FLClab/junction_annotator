@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from PyQt5.QtGui import QPixmap, QImage, QKeySequence
-from skimage import io
+from PyQt5.QtGui import QPixmap, QImage
 #Add
 import os
 #os.chdir("C:/Users/olory/Desktop/PostDoc/ProjetIntestin/junction_annotator-main")
@@ -12,9 +11,6 @@ from loader import Loader, generate_box, HISTORY_F_NAME, OUTPUT_FILE_NAME
 import numpy as np
 import sys
 import time
-from matplotlib import pyplot as plt
-import math
-import datetime
 #from PyQt5 import QtCore
 CROP_SIZE= 64
 CROP_STEP= int(64*0.75)
@@ -25,7 +21,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         super(self.__class__, self).__init__()
         self.setupUi(self)
         # Setup variables
-        self.loader= self.load_historyfile(crop_size=CROP_SIZE, crop_step=CROP_STEP, total_size=TOTAL_SIZE)
+        self.loader = self.load_historyfile(crop_size=CROP_SIZE, crop_step=CROP_STEP, total_size=TOTAL_SIZE)
         if self.loader is None:
             self.path = self.select_path(title="Select source path")
             self.outputpath = self.select_path(title="Select patch destination path")
