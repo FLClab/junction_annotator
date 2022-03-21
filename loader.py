@@ -1,6 +1,7 @@
 from skimage import io
 from skimage.filters import threshold_triangle, gaussian, rank
 from skimage.morphology import binary_erosion, area_closing, binary_dilation
+from scipy.ndimage.morphology import binary_fill_holes
 import numpy as np
 import os
 import json
@@ -48,15 +49,17 @@ class Loader:
         """
         self.image = io.imread(img_path).astype('float32')
 
-        # Basic foreground segmentation to check for empty spaces
-        image_combined = self.image[0] / np.max(self.image[0]) + self.image[1] / np.max(self.image[1])
-        foreground_initial = image_combined > threshold_triangle(image_combined)
+        # Get a vague segmentation of the foreground
+        background = self.image[1]
+        background = background < np.percentile(background, 50)
+        background = gaussian(background, 5) > 0.3
+        foreground = binary_fill_holes(1 - background)
 
-        # Edge segmentation
-        foreground_edge = gaussian(image_combined, sigma=5)
-        foreground_edge = (foreground_edge > threshold_triangle(foreground_edge)).astype('uint8')
-        foreground_erode = rank.minimum(foreground_edge, np.ones((300, 300)))
-        self.foreground = foreground_initial * (foreground_edge * 1 - foreground_erode * 1)
+        # Get the difference of the foreground and an eroded foreground as edge
+        foreground_erode = rank.minimum((foreground * 1).astype('uint8'), np.ones((256, 256)))  # Here we can vary the thickness of the edges with the shape of the np.ones
+        foreground = foreground - foreground_erode
+
+        self.foreground = foreground
 
         #print("image ", self.image.shape)
         self.image[0] = self.image[0] - np.min(self.image[0], axis=0)
@@ -81,7 +84,7 @@ class Loader:
             for i in range(0, self.image.shape[1], self.crop_step):
                 # Check if crop contains significant foreground
                 crop = self.foreground[j:j+self.crop_size, i:i+self.crop_size]
-                if np.sum(crop) >= np.size(crop) * 0.15:
+                if np.sum(crop) >= np.size(crop) * 0.10:
                     self.crop_data.append({'image':img_path, 'Y':j, 'X':i, 'size':self.crop_size})
 
         #self.crop_data = self.crop_data[1:]
