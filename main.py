@@ -569,7 +569,6 @@ class App(QMainWindow, Ui_JunctionAnnotator):
             else:
                 self.slider_class_list[i].setDisabled(False)
                 self.spin_class_list[i].setDisabled(False)
-        print(self.ambiguous_labels)
 
 
     def update_classification(self):
