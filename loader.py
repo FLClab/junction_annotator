@@ -41,7 +41,7 @@ class Loader:
 
         self.generate_crops(os.path.join(self.path, self.files[self.file_idx]))
 
-    def load_image(self, img_path):
+    def load_image(self, img_path, edges=True):
         """
         Load the image of the given index, turns it into uint8 RGB for display
         :param file_idx: index of the image in self.files
@@ -56,8 +56,9 @@ class Loader:
         foreground = binary_fill_holes(1 - background)
 
         # Get the difference of the foreground and an eroded foreground as edge
-        foreground_erode = rank.minimum((foreground * 1).astype('uint8'), np.ones((256, 256)))  # Here we can vary the thickness of the edges with the shape of the np.ones
-        foreground = foreground - foreground_erode
+        if edges:
+            foreground_erode = rank.minimum((foreground * 1).astype('uint8'), np.ones((256, 256)))  # Here we can vary the thickness of the edges with the shape of the np.ones
+            foreground = foreground - foreground_erode
 
         self.foreground = foreground
 
@@ -177,13 +178,13 @@ class Loader:
         with open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), "a") as file_object:
             file_object.write(os.path.join(self.outputpath, str(orig_fname_spplit[0])+'_'+str(self.n)+'.'+ext)+";"+str(classes)+";"+labelling_time+"\n")
 
-    def save_crop_data(self, classes, labelling_time, structure):
+    def save_crop_data(self, classes, labelling_time, structure, ambiguous):
         orig_fname= os.path.join(self.path, self.files[self.file_idx])
         orig_fname_spplit= os.path.splitext(self.files[self.file_idx])
         if len(self.crop_data)>self.n-1:
             if self.previous>=0:
                 with open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), "a") as file_object:
-                    file_object.write(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(structure)+";"+str(classes)+";"+labelling_time+"\n")
+                    file_object.write(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(structure)+";"+str(classes)+";"+str(ambiguous)+";"+labelling_time+"\n")
             else:
                 lines = open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), 'r').readlines()
                 lines = lines[:self.previous]

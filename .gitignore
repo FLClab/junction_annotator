@@ -2,3 +2,6 @@
 __pycache__/*
 *.xml
 *.pyc
+*.png
+*.txt
+edge_tests.py

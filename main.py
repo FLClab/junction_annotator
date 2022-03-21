@@ -32,6 +32,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
             self.outputpath = self.loader.outputpath
         self.labels = [False for _ in range(4)]
         self.labelValues = [0.0 for _ in range(4)]
+        self.ambiguous_labels = [False for _ in range(4)]
         self.current_time = time.time()
         self.time_steps = []
         self.time_steps_calc=[]
@@ -44,6 +45,11 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.mouse_x, self.mouse_y = 0, 0
         self.dragging = False
         self.swap_colors = True
+
+        # Group ambiguous checkboxes
+        self.check_ambiguous_list = [self.check_ambigu_class_1, self.check_ambigu_class_2, self.check_ambigu_class_3, self.check_ambigu_class_4]
+        self.slider_class_list = [self.slider_class_1, self.slider_class_2, self.slider_class_3, self.slider_class_4]
+        self.spin_class_list = [self.Spin_class_1, self.Spin_class_2, self.Spin_class_3, self.Spin_class_4]
 
 
         # Initial image
@@ -66,6 +72,8 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         #self.label_image.mouseReleaseEvent = self.image_release
         self.label_ch1.mousePressEvent = self.action_swap_colors
         self.label_ch2.mousePressEvent = self.action_swap_colors
+        for check in self.check_ambiguous_list:
+            check.clicked.connect(self.update_ambiguous_checks)
 
 
         # Shortcuts/hotkeys
@@ -134,6 +142,10 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.Spin_class_2.setValue(0.5)
         self.Spin_class_3.setValue(0.5)
         self.Spin_class_4.setValue(0.5)
+
+        for check in self.check_ambiguous_list:
+            check.setChecked(False)
+        self.update_ambiguous_checks()
         
     def set_class_values(self, classes):
         self.labelValues = classes
@@ -326,7 +338,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
         #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
         #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
-        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=1)
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=1, ambiguous=self.ambiguous_labels)
         self.hist_structures.append(1)
         self.hist_classes.append(self.labelValues)
         self.next_crop()
@@ -363,7 +375,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
         #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
         #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
-        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=0)
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=0, ambiguous=self.ambiguous_labels)
         self.hist_structures.append(0)
         self.hist_classes.append(self.labelValues)
         self.next_crop()
@@ -379,7 +391,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
         #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
         #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
-        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=2)
+        self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=2, ambiguous=self.ambiguous_labels)
         self.hist_structures.append(2)
         self.hist_classes.append(self.labelValues)
         self.next_crop()
@@ -544,8 +556,20 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         if i==4:
             self.labelValues[3]= self.Spin_class_4.value()
             self.slider_class_4.setValue(int(self.labelValues[3]*100))#setProperty("value", self.labelValues[3])
-        
-        
+
+    def update_ambiguous_checks(self):
+        """
+        Update currently checked ambiguous checkboxes (per class
+        """
+        for i, check in enumerate(self.check_ambiguous_list):
+            self.ambiguous_labels[i] = check.isChecked()
+            if self.ambiguous_labels[i]:
+                self.slider_class_list[i].setDisabled(True)
+                self.spin_class_list[i].setDisabled(True)
+            else:
+                self.slider_class_list[i].setDisabled(False)
+                self.spin_class_list[i].setDisabled(False)
+        print(self.ambiguous_labels)
 
 
     def update_classification(self):
