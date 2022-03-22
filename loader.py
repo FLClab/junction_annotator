@@ -1,16 +1,14 @@
 from skimage import io
-from skimage.filters import threshold_triangle, gaussian, rank
-from skimage.morphology import binary_erosion, area_closing, binary_dilation
+from skimage.filters import gaussian, rank
 from scipy.ndimage.morphology import binary_fill_holes
 import numpy as np
 import os
 import json
 from datetime import datetime
 
-from matplotlib import pyplot as plt
 
-
-HISTORY_F_NAME= os.path.join(os.path.dirname(os.path.abspath(__file__)),"history.json")
+#HISTORY_F_NAME= os.path.join(os.path.dirname(os.path.abspath(__file__)),"history.json")
+HISTORY_F_NAME= "history.json"
 OUTPUT_FILE_NAME="patchlist.txt"
 
 class Loader:
@@ -95,7 +93,7 @@ class Loader:
         return self
 
     def __next__(self):
-        self.previous =0
+        self.previous = 0
         self.atStopIteration= False
         if self.n >= len(self.crop_data):
             self.file_idx += 1
@@ -131,24 +129,15 @@ class Loader:
         return crop
 
     def __previous__(self):
+        if self.n < 1 :
+            self.n = 0
+            self.previous = 0
+            return None
+
         self.previous = self.previous- 1
-        self.n = self.n - 2
-        if self.n < 0 :
-            self.n = self.n + 2
-            self.previous= 0
-            return None 
-            #self.file_idx -= 1
-            #self.x = 0
-            #self.y = 0
-            #if self.file_idx < len(self.files):    
-            #    self.generate_crops(os.path.join(self.path, self.files[self.file_idx]))
-            #    self.n = len( self.crop_data) -1
-        #if self.file_idx >= len(self.files):
-        #    #print("Stop iteration ")
-        #    raise StopIteration
+        previous_n = self.n - 2
 
-
-        crop = self.crop_data[self.n]
+        crop = self.crop_data[previous_n]
         y = crop['Y']
         x = crop['X']
         size = crop['size']
@@ -163,7 +152,7 @@ class Loader:
             canvas[:crop.shape[0], :crop.shape[1], :] = crop
             crop = canvas
 
-        self.n += 1
+        self.n -= 1
         self.atStopIteration= False
 
         return crop
@@ -188,21 +177,25 @@ class Loader:
             else:
                 lines = open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), 'r').readlines()
                 lines = lines[:self.previous]
-                lines.append(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(structure)+";"+str(classes)+";"+labelling_time+"\n")
+                lines.append(orig_fname+";"+str(self.crop_data[self.n-1]['X'])+";"+str(self.crop_data[self.n-1]['Y'])+";"+str(self.crop_data[self.n-1]['size'])+";"+str(structure)+";"+str(classes)+";"+str(ambiguous)+";"+labelling_time+"\n")
                 open(os.path.join(self.outputpath,OUTPUT_FILE_NAME), 'w').writelines(lines)
                 self.previous= 0
 
 
-    def saveHistory(self, classes=[], structures=[]):
+    def saveHistory(self, classes=[], structures=[], ambiguous=[], back=False):
         #☺ ne pas sauvegarder si l'utilisateur a parcouru dejà toutes les images
+        save_n = self.n
+        if back:
+            save_n -= 1
+
         self.deleteHistory()
         if self.atStopIteration:
             return
         f_ow = open(HISTORY_F_NAME, "w")
         last_data={"path":self.path, "outputpath":self.outputpath, 
                    "file_idx":self.file_idx, "files":self.files, 
-                   "crop_data":self.crop_data, "n":self.n-1,
-                   "classes":classes, "structures":structures }
+                   "crop_data":self.crop_data, "n":save_n,
+                   "classes":classes, "structures":structures, "ambiguous":ambiguous }
         json.dump(last_data, f_ow)
         f_ow.close()
         #with open(HISTORY_F_NAME, "w") as file_object:
@@ -224,7 +217,8 @@ class Loader:
                     mloader.crop_data= data["crop_data"]
                     mloader.n= data["n"]
                     classes=data["classes"]
-                    structures=data["structures"]                
+                    structures=data["structures"]
+                    ambiguous=data["ambiguous"]
                     mloader.load_image(os.path.join(mloader.path, mloader.files[mloader.file_idx]))#  mloader.generate_crops(os.path.join(mloader.path, mloader.files[mloader.file_idx]))
             #return mloader
         return mloader

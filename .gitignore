@@ -1,7 +1,9 @@
-.idea/*
-__pycache__/*
+./.idea/*
+./__pycache__/*
 *.xml
 *.pyc
 *.png
-*.txt
+patchlist*
 edge_tests.py
+./build/*
+./dist/*

@@ -1,17 +1,12 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPixmap, QImage
-#Add
 import os
-#os.chdir("C:/Users/olory/Desktop/PostDoc/ProjetIntestin/junction_annotator-main")
-#
-
 from gui import Ui_JunctionAnnotator
 from loader import Loader, generate_box, HISTORY_F_NAME, OUTPUT_FILE_NAME
 import numpy as np
 import sys
 import time
-#from PyQt5 import QtCore
 CROP_SIZE= 64
 CROP_STEP= int(64*0.75)
 TOTAL_SIZE= 128
@@ -38,6 +33,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.time_steps_calc=[]
         self.hist_classes= []
         self.hist_structures=[]
+        self.hist_ambiguous=[]
 
         # Image settings
         self.zoom_level = np.float32(1.0)
@@ -341,9 +337,12 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=1, ambiguous=self.ambiguous_labels)
         self.hist_structures.append(1)
         self.hist_classes.append(self.labelValues)
+        self.hist_ambiguous.append(self.ambiguous_labels)
+        self.loader.saveHistory(self.hist_classes, self.hist_structures, self.hist_ambiguous)
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()
+
         
     def goBackward(self):
         self.previous_crop()
@@ -355,15 +354,15 @@ class App(QMainWindow, Ui_JunctionAnnotator):
             save history
             save last edited file
         """
-        if False:
-            self.time_steps.append(time.time() - self.current_time)
-            time_taken = np.sum(self.time_steps)
-            self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
-            #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
-            #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
-            self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=1)
-            self.next_crop()
-        self.loader.saveHistory(self.hist_classes, self.hist_structures)
+        #if False:
+        #    self.time_steps.append(time.time() - self.current_time)
+        #    time_taken = np.sum(self.time_steps)
+        #    self.time_steps_calc.append(self.curr_time.toString("hh:mm:ss"))
+        #    #self.loader.save_patch(image=self.crop, classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), ext="png")
+        #    #self.save_crop_data(classes=self.labelValues, labelling_time=self.time_steps[-1].toString("hh:mm:ss"))
+        #    self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=1)
+        #    self.next_crop()
+        self.loader.saveHistory(self.hist_classes, self.hist_structures, self.hist_ambiguouss)
         
 
     def skip(self):
@@ -378,6 +377,8 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=0, ambiguous=self.ambiguous_labels)
         self.hist_structures.append(0)
         self.hist_classes.append(self.labelValues)
+        self.hist_ambiguous.append(self.ambiguous_labels)
+        self.loader.saveHistory(self.hist_classes, self.hist_structures, self.hist_ambiguous)
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()
@@ -394,6 +395,8 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.loader.save_crop_data(classes=self.labelValues, labelling_time=self.curr_time.toString("hh:mm:ss"), structure=2, ambiguous=self.ambiguous_labels)
         self.hist_structures.append(2)
         self.hist_classes.append(self.labelValues)
+        self.hist_ambiguous.append(self.ambiguous_labels)
+        self.loader.saveHistory(self.hist_classes, self.hist_structures, self.hist_ambiguous)
         self.next_crop()
         self.curr_time =  QTime(00,00,00)
         self.start_action()
@@ -460,6 +463,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
                classes=self.hist_classes[-1]
                self.hist_classes=self.hist_classes[:-1]
                self.hist_structures=self.hist_structures[:-1]
+               self.hist_ambiguous=self.hist_ambiguous[:-1]
                self.set_class_values(classes)
         except StopIteration:
             end_dialog = QMessageBox()
@@ -471,6 +475,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.zoom_level = np.float32(1.0)
         self.display_crop()
         self.show()
+        self.loader.saveHistory(self.hist_classes, self.hist_structures, self.hist_ambiguous, back=True)
 
         
     def start_action(self):
