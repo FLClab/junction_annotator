@@ -7,9 +7,10 @@ from loader import Loader, generate_box, HISTORY_F_NAME, OUTPUT_FILE_NAME
 import numpy as np
 import sys
 import time
-CROP_SIZE= 64
-CROP_STEP= int(64*0.75)
-TOTAL_SIZE= 128
+
+CROP_SIZE = 64
+CROP_STEP = int(64*0.75)
+TOTAL_SIZE = 128
 
 class App(QMainWindow, Ui_JunctionAnnotator):
     def __init__(self):
@@ -415,9 +416,9 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.reset_class_values()
         self.resetZoom()
 
-
         try:
             self.crop = self.loader.__next__()
+            self.crop = np.transpose(self.crop, axes=[1,0,2])
         except StopIteration:
             end_dialog = QMessageBox()
             end_dialog.setIcon(QMessageBox.Information)

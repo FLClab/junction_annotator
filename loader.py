@@ -6,14 +6,13 @@ import os
 import json
 from datetime import datetime
 
-
 #HISTORY_F_NAME= os.path.join(os.path.dirname(os.path.abspath(__file__)),"history.json")
 HISTORY_F_NAME= "history.json"
 OUTPUT_FILE_NAME="patchlist.txt"
 
 class Loader:
     
-    def __init__(self, path, outputpath=None, crop_size=60, crop_step=int(60*0.75), total_size=128, fg_threshold=0.2):
+    def __init__(self, path, outputpath=None, crop_size=64, crop_step=int(64*0.75), total_size=128, fg_threshold=0.2):
         """
         Crop iterator
         :param path:
@@ -60,11 +59,10 @@ class Loader:
 
         self.foreground = foreground
 
-        #print("image ", self.image.shape)
-        self.image[0] = self.image[0] - np.min(self.image[0], axis=0)
-        self.image[1] = self.image[1] - np.min(self.image[1], axis=0)
-        self.image[0] = self.image[0] / np.percentile(self.image[0], 99.9)
-        self.image[1] = self.image[1] / np.percentile(self.image[1], 99.9)
+        self.image[0] = self.image[0] - np.min(self.image[0])
+        self.image[1] = self.image[1] - np.min(self.image[1])
+        self.image[0] = self.image[0] / np.max(self.image[0])
+        self.image[1] = self.image[1] / np.max(self.image[1])
         self.image = np.clip(self.image, 0, 1)
         self.image = (self.image*255).astype('uint8')
 
@@ -73,6 +71,10 @@ class Loader:
         buffer = self.image[:,:,1].copy()
         self.image[:,:,1] = self.image[:,:,0].copy()
         self.image[:,:,0] = buffer
+
+        #print(self.image.shape)
+        #plt.imshow(self.image)
+        #plt.show()
         #print("image after ", self.image.shape)
 
     def generate_crops(self, img_path):
@@ -108,7 +110,6 @@ class Loader:
             self.atStopIteration = True
             raise StopIteration
 
-
         crop = self.crop_data[self.n]
         y = crop['Y']
         x = crop['X']
@@ -123,6 +124,14 @@ class Loader:
             canvas = np.zeros((self.total_size, self.total_size, 3), dtype='uint8')
             canvas[:crop.shape[0], :crop.shape[1], :] = crop
             crop = canvas
+
+        crop = crop.astype('float32')
+        crop[...,0] = crop[...,0] - np.min(crop[...,0])
+        crop[...,1] = crop[...,1] - np.min(crop[...,1])
+        crop[...,0] = crop[...,0] / np.max(crop[...,0])
+        crop[...,1] = crop[...,1] / np.max(crop[...,1])
+        crop = np.clip(crop, 0, 1)
+        crop = (crop*255).astype('uint8')
 
         self.n += 1
 
@@ -151,6 +160,13 @@ class Loader:
             canvas = np.zeros((self.total_size, self.total_size, 3), dtype='uint8')
             canvas[:crop.shape[0], :crop.shape[1], :] = crop
             crop = canvas
+
+        crop[0] = crop[0] - np.min(crop[0])
+        crop[1] = crop[1] - np.min(crop[1])
+        crop[0] = crop[0] / np.max(crop[0])
+        crop[1] = crop[1] / np.max(crop[1])
+        crop = np.clip(crop, 0, 1)
+        crop = (crop * 255).astype('uint8')
 
         self.n -= 1
         self.atStopIteration= False
