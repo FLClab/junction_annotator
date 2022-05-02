@@ -161,12 +161,13 @@ class Loader:
             canvas[:crop.shape[0], :crop.shape[1], :] = crop
             crop = canvas
 
-        crop[0] = crop[0] - np.min(crop[0])
-        crop[1] = crop[1] - np.min(crop[1])
-        crop[0] = crop[0] / np.max(crop[0])
-        crop[1] = crop[1] / np.max(crop[1])
+        crop = crop.astype('float32')
+        crop[...,0] = crop[...,0] - np.min(crop[...,0])
+        crop[...,1] = crop[...,1] - np.min(crop[...,1])
+        crop[...,0] = crop[...,0] / np.max(crop[...,0])
+        crop[...,1] = crop[...,1] / np.max(crop[...,1])
         crop = np.clip(crop, 0, 1)
-        crop = (crop * 255).astype('uint8')
+        crop = (crop*255).astype('uint8')
 
         self.n -= 1
         self.atStopIteration= False
