@@ -461,6 +461,7 @@ class App(QMainWindow, Ui_JunctionAnnotator):
                return
            else:
                self.crop = p_crop
+               self.crop = np.transpose(self.crop, axes=[1, 0, 2])
                self.reset_class_values()
                self.resetZoom()
                classes=self.hist_classes[-1]
