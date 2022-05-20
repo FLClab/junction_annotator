@@ -48,13 +48,13 @@ class Loader:
 
         # Get a vague segmentation of the foreground
         background = self.image[1]
-        background = background < np.percentile(background, 50)
+        background = background < np.mean(background)*0.75
         background = gaussian(background, 5) > 0.3
         foreground = binary_fill_holes(1 - background)
 
-        # Get the difference of the foreground and an eroded foreground as edge
+        # Get the difference of the foreground and an eroded foreground as edge (takes a while)
         if edges:
-            foreground_erode = rank.minimum((foreground * 1).astype('uint8'), np.ones((256, 256)))  # Here we can vary the thickness of the edges with the shape of the np.ones
+            foreground_erode = rank.minimum((foreground * 1).astype('uint8'), np.ones((300, 300)))  # Here we can vary the thickness of the edges with the shape of the np.ones
             foreground = foreground - foreground_erode
 
         self.foreground = foreground

@@ -62,6 +62,8 @@ class App(QMainWindow, Ui_JunctionAnnotator):
         self.button_pause.clicked.connect(self.pause)
         self.slider_intensity_ch0.valueChanged.connect(self.display_crop)
         self.slider_intensity_ch1.valueChanged.connect(self.display_crop)
+        self.slider_intensity_ch0.mouseDoubleClickEvent = self.reset_contrast
+        self.slider_intensity_ch1.mouseDoubleClickEvent = self.reset_contrast
         #self.button_zoom.clicked.connect(self.zoom)  # Zoom buttons not connected for now (doesn't work properly)
         #self.button_dezoom.clicked.connect(self.dezoom)
         #self.label_image.mousePressEvent = self.image_click
@@ -619,6 +621,15 @@ class App(QMainWindow, Ui_JunctionAnnotator):
 
         self.displayed_crop = self.displayed_crop.copy()[y_min:y_max, x_min:x_max]
         self.displayed_crop[self.box] = 255
+
+    def reset_contrast(self, event):
+        """
+        Reset the contrast on right click
+        :return:
+        """
+        self.slider_intensity_ch0.setValue(100)
+        self.slider_intensity_ch1.setValue(100)
+        self.display_crop()
 
     def zoom(self):
         """
