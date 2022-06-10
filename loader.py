@@ -6,7 +6,6 @@ import os
 import json
 from datetime import datetime
 
-#HISTORY_F_NAME= os.path.join(os.path.dirname(os.path.abspath(__file__)),"history.json")
 HISTORY_F_NAME= "history.json"
 OUTPUT_FILE_NAME="patchlist.txt"
 
@@ -34,11 +33,11 @@ class Loader:
         self.file_idx = 0
         self.n = 0
         self.previous= 0
-        self.atStopIteration= False
+        self.atStopIteration = False
 
         self.generate_crops(os.path.join(self.path, self.files[self.file_idx]))
 
-    def load_image(self, img_path, edges=True):
+    def load_image(self, img_path, edges=False):
         """
         Load the image of the given index, turns it into uint8 RGB for display
         :param file_idx: index of the image in self.files
@@ -72,13 +71,7 @@ class Loader:
         self.image[:,:,1] = self.image[:,:,0].copy()
         self.image[:,:,0] = buffer
 
-        #print(self.image.shape)
-        #plt.imshow(self.image)
-        #plt.show()
-        #print("image after ", self.image.shape)
-
     def generate_crops(self, img_path):
-        #print("Generating crop for ", img_path )
         self.load_image(img_path)
         self.crop_data = []
         for j in range(0, self.image.shape[0], self.crop_step):
@@ -88,7 +81,6 @@ class Loader:
                 if np.sum(crop) >= np.size(crop) * 0.10:
                     self.crop_data.append({'image':img_path, 'Y':j, 'X':i, 'size':self.crop_size})
 
-        #self.crop_data = self.crop_data[1:]
         np.random.shuffle(self.crop_data)
 
     def __iter__(self):
